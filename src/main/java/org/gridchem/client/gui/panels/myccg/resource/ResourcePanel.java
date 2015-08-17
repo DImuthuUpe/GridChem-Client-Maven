@@ -181,7 +181,7 @@ implements StatusListener {
         add(centerSplitPane, BorderLayout.CENTER); 
         
         GETHARDWARECommand command = new GETHARDWARECommand(this);
-        command.getArguments().put("project.id", GridChem.project.getId());
+        command.getArguments().put("project.id", GridChem.project.getProjectID());
         statusChanged(new StatusEvent(command,Status.START));
         
 	}
@@ -380,7 +380,7 @@ implements StatusListener {
         
         // rebuild the site table and add the new model to the table. everything else
         // will refresh on the next click.
-        siteTable = createSiteTableData(GridChem.getMachineList());
+        //siteTable = createSiteTableData(GridChem.getMachineList()); //remove this
         
         DefaultMutableTreeNode top = new DefaultMutableTreeNode(
                 "CCG");

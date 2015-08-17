@@ -49,6 +49,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import org.apache.airavata.model.appcatalog.appinterface.DataType;
+import org.apache.airavata.model.appcatalog.appinterface.InputDataObjectType;
 import org.gridchem.client.SubmitJobsWindow;
 import org.gridchem.client.SwingWorker;
 import org.gridchem.client.common.Settings;
@@ -123,7 +125,7 @@ public class InputFilePanel extends JPanel implements ActionListener, StatusList
 //        add(panel);
 //        this.setVisible(true);
     }
-    
+
     public void addTextInput(String input) {
         preview.setEditPaneContent(input);
     }
@@ -156,7 +158,7 @@ public class InputFilePanel extends JPanel implements ActionListener, StatusList
                 progressDialog.displayTimeLeft = false;
             
                 GETINPUTCommand command = new GETINPUTCommand(this);
-                command.getArguments().put("job", parent.job);
+                //command.getArguments().put("job", parent.experiment); remove comment
                 command.getArguments().put("progressDialog", progressDialog);
                 
                 statusChanged(new StatusEvent(this,Status.START));
@@ -237,10 +239,6 @@ public class InputFilePanel extends JPanel implements ActionListener, StatusList
             }
             
         });
-        
-//        JTableHeader header = table.getTableHeader();
-//        header.setUpdateTableInRealTime(true);
-//        header.addMouseListener(new ColumnListener());
         
         JScrollPane ps = new JScrollPane();
         ps.getViewport().setBackground(table.getBackground());
@@ -436,7 +434,7 @@ public class InputFilePanel extends JPanel implements ActionListener, StatusList
             int loadDefaultInputFiles = JOptionPane.showConfirmDialog(this, e.getMessage(), "File Tranfer Error", JOptionPane.YES_NO_OPTION);
             
             if (loadDefaultInputFiles == JOptionPane.YES_OPTION) {
-                addMultipleFileInput(FileUtility.getDefaultInputFiles(parent.job.getSoftwareName()));
+                //addMultipleFileInput(FileUtility.getDefaultInputFiles(parent.experiment.getApplicationId())); remove comment
             }
             
             stopWaiting();

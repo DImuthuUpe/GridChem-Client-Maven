@@ -57,6 +57,12 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
+import org.apache.airavata.gridchem.AiravataManager;
+import org.apache.airavata.model.appcatalog.appdeployment.ApplicationDeploymentDescription;
+import org.apache.airavata.model.appcatalog.appdeployment.ApplicationModule;
+import org.apache.airavata.model.appcatalog.computeresource.ComputeResourceDescription;
+import org.apache.airavata.model.error.AiravataClientConnectException;
+import org.apache.airavata.model.workspace.Project;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -64,6 +70,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
+import org.apache.thrift.TException;
 import org.gridchem.client.common.Settings;
 import org.gridchem.client.util.Env;
 import org.gridchem.client.util.GMS3;
@@ -85,10 +92,10 @@ public class GridChem
 //    public static VO userVO;
     
     public static UserBean user = null;
-    public static ProjectBean project = null;
+    public static Project project = null;
     
     public static List<JobBean> jobs = new ArrayList<JobBean>();
-    public static List<ProjectBean> projects = new ArrayList<ProjectBean>();
+    public static List<Project> projects = new ArrayList<Project>();
     public static List<ComputeBean> systems = new ArrayList<ComputeBean>();
     public static List<SoftwareBean> applications = new ArrayList<SoftwareBean>();
     
@@ -144,6 +151,7 @@ public class GridChem
     }
     
 	private static void init() {
+
         settings = Settings.getInstance();
         env = Env.getInstance();
 //        SimpleHook hook = new SimpleHook();
@@ -158,10 +166,10 @@ public class GridChem
         		setCommandLineOptions();
         		parseCommandLine(args);
         } catch (Exception e) {
-        		System.out.println("Invalid command line option given: " + 
+        		System.out.println("Invalid command line option given: " +
         				e.getMessage());
         }
-        
+
         //JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame();
 		
@@ -180,15 +188,15 @@ public class GridChem
 		// Use the native look and feel since Java's is pretty lame.
 	    try {
 	        UIManager.setLookAndFeel(
-	                UIManager.getSystemLookAndFeelClassName());
+					UIManager.getSystemLookAndFeelClassName());
 	    } catch (Exception e) {
 	        // Ignore exceptions, which only result in the wrong look and feel.
-	        System.out.println( "GridChem.main: an exception related to the" +
-	                            " look and feel was ignored." );
+	        System.out.println("GridChem.main: an exception related to the" +
+					" look and feel was ignored.");
 	    }
-		
+
 	    init();
-        
+
         frame.setTitle("GridChem " + Env.getVersion());
 		frame.getContentPane().add(oc);
 		frame.addWindowListener(new WindowListener() {
@@ -233,7 +241,6 @@ public class GridChem
 	    int upperLeftY = (screenHeight - windowHeight)/2;   
 	    frame.setLocation(upperLeftX, upperLeftY);
 	    frame.setVisible(true);
-	    
 
         Trace.exit();
     }
@@ -574,43 +581,46 @@ public class GridChem
     		return (ArrayList<String>) GridChem.resourceHash.get(machine+"_"+"projects");
     }
     
-    public static List<ComputeBean> getMachineList(){
-		return project.getSystems();
+    public static List<ComputeResourceDescription> getMachineList(){
+		try {
+			List<ComputeResourceDescription> compList = AiravataManager.getComputationalResources();
+			return compList;
+		}catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
     }
     
     public static ComputeBean getMachine(String name) {
         ComputeBean hpc = null;
         
-        for(ComputeBean machine: project.getSystems()) {
+        /*for(ComputeBean machine: project.getSystems()) {
             if (machine.getHostname().equals(name)) {
                 hpc = machine;
                 break;
             }
-        }
+        }*/
         
         return hpc;
     }
     
-    public static ArrayList<ComputeBean> getSoftwareMachineList(String application) {
-        ArrayList<ComputeBean> machineList = new ArrayList<ComputeBean>();
-        
-        for (ComputeBean hpc : project.getSystems()) {
-            for (SoftwareBean sw : hpc.getSoftware()) {
-                if (sw.getName().equalsIgnoreCase(application) && 
-                        !machineList.contains(hpc.getName())) {
-                    machineList.add(hpc);
-                    break;
-                }
-            }
-        }
-        
-        return machineList;
+    public static List<ComputeResourceDescription> getSoftwareMachineList(String applicationId) {
+        try {
+			return AiravataManager.getCompResourcesForAppId(applicationId);
+		} catch(Exception ex){
+			ex.printStackTrace();
+			return null;
+		}
     }
     
-    public static ArrayList<SoftwareBean> getSoftware() {
-        ArrayList<SoftwareBean> apps = new ArrayList<SoftwareBean>();
-
-        for (ComputeBean hpc : project.getSystems()) {
+    public static List<ApplicationDeploymentDescription> getSoftware() {
+        List<ApplicationDeploymentDescription> apps = new ArrayList<ApplicationDeploymentDescription>();
+		try {
+			apps = AiravataManager.getAplicationDeployments();
+		}catch(Exception ex){
+			ex.printStackTrace();
+		}
+        /*for (ComputeBean hpc : project.getSystems()) {
             for (SoftwareBean sw : hpc.getSoftware()) {
                 if (!apps.contains(sw)) {
                     apps.add(sw);
@@ -618,11 +628,12 @@ public class GridChem
             }
         }
         
-        return apps;
+        return apps;*/
+		return apps;
     }
     
     public static SoftwareBean getSoftware(String name) {
-        for (ComputeBean hpc : project.getSystems()) {
+        /*for (ComputeBean hpc : project.getSystems()) {
             for (SoftwareBean sw : hpc.getSoftware()) {
                 if (sw.getName().equals(name)) {
                     return sw;
@@ -630,13 +641,14 @@ public class GridChem
             }
         }
         
-        return null;
+        return null;*/
+		return null;
     }
     
     public static List<String> getSoftwareNames() {
         ArrayList<String> appNames = new ArrayList<String>();
         
-        for (ComputeBean hpc : project.getSystems()) {
+        /*for (ComputeBean hpc : project.getSystems()) {
             for (SoftwareBean sw : hpc.getSoftware()) {
                 if (!appNames.contains(sw.getName().toUpperCase())) {
                     appNames.add(sw.getName().toUpperCase());
@@ -644,35 +656,37 @@ public class GridChem
             }
         }
         
-        return appNames;
+        return appNames;*/
+		return null;
     }
     
-    public static ArrayList<SoftwareBean> getSoftwareforMachine(String machine) {
-        ArrayList<SoftwareBean> apps = new ArrayList<SoftwareBean>();
-        
-        for (ComputeBean hpc : project.getSystems()) {
-            if (hpc.getName().equals(machine)) {
-                for (SoftwareBean sw : hpc.getSoftware()) {
-                    if (!apps.contains(sw)) {
-                        apps.add(sw);
-                    }
-                }
-            }
-        }
-        
-        return apps;
+    public static List<ApplicationDeploymentDescription> getSoftwareforMachine(String machine) {
+        List<ApplicationDeploymentDescription> apps = new ArrayList<ApplicationDeploymentDescription>();
+
+		try{
+			apps= AiravataManager.getAppDepDescriptionforMachine(machine);
+
+		}catch (Exception ex){
+			ex.printStackTrace();
+		}
+		return apps;
     }
     
-    public static ComputeBean getMachineByName(String name) {
-        ComputeBean hpc = null;
-        
-        for(ComputeBean machine: project.getSystems()) {
+    public static ComputeResourceDescription getMachineByName(String name) {
+
+        /*for(ComputeBean machine: project.getSystems()) {
             if (machine.getName().equals(name)) {
                 hpc = machine;
             }
         }
         
-        return hpc;
+        return hpc;*/
+		try{
+			return AiravataManager.getComputeResourceDescriptionFromId(name);
+		} catch (Exception ex){
+			ex.printStackTrace();
+			return null;
+		}
     }
     
     /**
@@ -779,6 +793,17 @@ public class GridChem
             System.out.println(helpFooter);
         }
     }
+
+	public static ApplicationModule getAppModuleFromId(String appID){
+		try{
+			ApplicationDeploymentDescription appDesc = AiravataManager.getApplicationDeploymentDescription(appID);
+			ApplicationModule appModule = AiravataManager.getApplicationModule(appDesc.getAppModuleId());
+			return appModule;
+		}catch (Exception e){
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 }
 
